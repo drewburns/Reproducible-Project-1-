@@ -1,0 +1,77 @@
+Activity Data Report
+====================
+## Load the data
+This will load the data
+```{r, cache = TRUE}
+activitydata <- read.csv('activity.csv')
+head(activitydata)
+
+```
+
+## Total steps
+Let's look at a histogram of the total number of steps for each day  
+
+```{r}
+stepsByDay <- aggregate(steps ~ date , activitydata, sum)
+hist(stepsByDay$steps, main = "Frequency of Number of Steps per Day", xlab = "Steps per Day", breaks= 20)
+mean(stepsByDay$steps, na.rm = TRUE) # Mean steps per day
+median(stepsByDay$steps, na.rm = TRUE) # Median steps per day
+
+```
+
+
+
+## Interval
+Here is the graph and code that shows the average number of steps by interval
+
+
+
+```{r}
+aveStepsPerInt <- aggregate(steps ~ interval, activitydata , mean)
+plot(aveStepsPerInt$interval, aveStepsPerInt$steps, main = "Average Number of Steps per Interval", ylab= "Average Number of Steps", xlab= "Interval", type = "l")
+abline(v= aveStepsPerInt[which.max(aveStepsPerInt$steps), 1], col="blue")
+#Interval with highest amount of average steps 
+aveStepsPerInt[which.max(aveStepsPerInt$steps), 1]
+```
+
+
+## Missing Values
+Let's look at the missing values
+
+
+```{r}
+sum(is.na(activitydata$steps))
+activityfilled <- activitydata
+for (i in 1:nrow(activityfilled)) {
+  if (is.na(activityfilled[i,]$steps)) {
+    activityfilled[i,]$steps <- subset(aveStepsPerInt, aveStepsPerInt$interval == activityfilled[i,]$interval )[,2]
+    
+  }
+}
+sum(is.na(activityfilled)) # Did we completely fill the data set?
+
+#Lets see if the new data makes a different graph
+stepsByDay <- aggregate(steps ~ date , activityfilled, sum)
+hist(stepsByDay$steps, main = "Frequency of Number of Steps per Day", xlab = "Steps per Day", breaks= 20)
+mean(stepsByDay$steps, na.rm = TRUE) # Mean steps per day
+median(stepsByDay$steps, na.rm = TRUE) # Median steps per day
+
+```
+
+## Weekend vs Weekday
+
+``` {r}
+#add day of week to data set
+library(lattice)
+
+activityfilled$day=ifelse(as.POSIXlt(as.Date(activityfilled$date))$wday%%6==0,
+                          "weekend","weekday")
+activityfilled$day=factor(activityfilled$day,levels=c("weekday","weekend"))
+stepsInterval2=aggregate(steps~interval+day,activityfilled,mean)
+
+xyplot(steps~interval|factor(day),data=stepsInterval2,aspect=1/2,type="l")
+
+```
+
+
+
